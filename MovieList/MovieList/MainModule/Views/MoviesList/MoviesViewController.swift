@@ -1,17 +1,19 @@
 import UIKit
 
-class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout {
+class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout, MoviesViewProtocol {
     
     // MARK: - Private Properties
+    private var presenter: MoviesPresenter!
     private let searchController = UISearchController(searchResultsController: nil)
     private var collectionView: UICollectionView!
-    private let networkManager = NetworkManager.shared
-    var dataSource = [Film]()
+    var dataSource: [Film] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
         configure()
+        presenter = MoviesPresenter(view: self)
+        presenter.fetchMovies()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -25,7 +27,23 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         setupNavBarController()
         setupSearchController()
         setupCollectionView()
-        fetchMovies()
+    }
+    
+    func updateMovies(_ movies: [Film]) {
+        dataSource = movies
+        collectionView.reloadData()
+    }
+    
+    func showError(_ error: String) {
+        let alert = UIAlertController(title: "Error", message: error, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true)
+    }
+    
+    func navigateToMovieDescription(with description: MoviesDescription) {
+        let descriptionVC = MoviesDescriptionViewController()
+        descriptionVC.movieDescription = description
+        navigationController?.pushViewController(descriptionVC, animated: true)
     }
     
     private func checkAndRequestApiKey() {
@@ -40,15 +58,15 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         }
         alert.addAction(UIAlertAction(title: "Сохранить", style: .default, handler: { [weak self] _ in
             if let apiKey = alert.textFields?.first?.text, !apiKey.isEmpty {
-                self?.networkManager.setApiKey(apiKey)
-                self?.fetchMovies()
+                self?.presenter.setApiKey(apiKey)
+                self?.presenter.fetchMovies()
             } else {
                 self?.showApiKeyAlert()
             }
         }))
         present(alert, animated: true, completion: nil)
     }
-
+    
     
     private func setupCollectionView() {
         let layout = UICollectionViewFlowLayout()
@@ -98,18 +116,6 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         }
     }
     
-    private func fetchMovies() {
-        networkManager.fetchMovies { [weak self] result in
-            switch result {
-            case .success(let movies):
-                self?.dataSource = movies.films
-                self?.collectionView.reloadData()
-            case .failure(let error):
-                print("Error in fetchMovies: \(error.localizedDescription)")
-            }
-        }
-    }
-    
     func navigateToMovieDescriptionViewController(with movieDescription: MoviesDescription) {
         let descriptionVC = MoviesDescriptionViewController()
         descriptionVC.movieDescription = movieDescription
@@ -131,8 +137,8 @@ extension MoviesViewController: UICollectionViewDataSource {
         
         let film = dataSource[indexPath.row]
         cell.label.text = film.nameRU
-        networkManager.fetchPoster(from: film.posterURLPreview) { data in
-            cell.imageView.image = UIImage(data: data)
+        presenter.fetchPoster(for: film.posterURLPreview) { data in
+            cell.imageView.image = data
         }
         
         return cell
@@ -142,18 +148,6 @@ extension MoviesViewController: UICollectionViewDataSource {
 // MARK: - UICollectionViewDelegate
 extension MoviesViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let film = dataSource[indexPath.row]
-        let filmId = film.filmID
-        
-        NetworkManager.shared.fetchDescriptionMovies(for: String(filmId)) { [weak self] result in
-            switch result {
-            case .success(let movieDescription):
-                DispatchQueue.main.async {
-                    self?.navigateToMovieDescriptionViewController(with: movieDescription)
-                }
-            case .failure(let error):
-                print("Error fetching movie description: \(error)")
-            }
-        }
+        presenter.didSelectMovie(at: indexPath.row)
     }
 }

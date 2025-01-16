@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 enum NetworkError: Error {
     case invalidURL, decodingError, noData
@@ -14,7 +15,12 @@ class NetworkManager {
     private init() {}
     
     func setApiKey(_ key: String) {
-        KeychainManager.shared.save(key: "apiKey", value: key)
+        let success = KeychainManager.shared.save(key: "apiKey", value: key)
+        if success {
+            print("API key saved successfully")
+        } else {
+            print("Failed to save API key")
+        }
     }
     
     func fetchPoster(from url: URL, completion: @escaping (Data) -> Void) {
@@ -27,6 +33,7 @@ class NetworkManager {
         }
     }
     
+    
     func fetchMovies(completion: @escaping (Result<Movies, NetworkError>) -> Void) {
         guard let apiKey = self.apiKey else {
             print("API key not set")
@@ -36,7 +43,7 @@ class NetworkManager {
         var request = URLRequest(url: Link.allMovies.url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-//        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
+        //        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
         request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -79,7 +86,7 @@ class NetworkManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-//        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
+        //        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
         request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
