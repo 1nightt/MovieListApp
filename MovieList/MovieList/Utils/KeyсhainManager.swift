@@ -5,7 +5,7 @@ class KeychainManager {
     static let shared = KeychainManager()
     
     private init() {}
-
+    
     func save(key: String, value: String) -> Bool {
         let data = value.data(using: .utf8)!
         let query = [
@@ -18,7 +18,7 @@ class KeychainManager {
         let status = SecItemAdd(query, nil)
         return status == errSecSuccess
     }
-
+    
     func retrieve(key: String) -> String? {
         let query = [
             kSecClass: kSecClassGenericPassword,

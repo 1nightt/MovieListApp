@@ -1,10 +1,9 @@
 import UIKit
 
-class MoviesDescriptionViewController: UIViewController {
+class MoviesDescriptionViewController: UIViewController, MoviesDescriptionViewProtocol {
     
-    private let networkManager = NetworkManager.shared
     var movieDescription: MoviesDescription?
-    var onFilmIdReceived: ((String) -> Void)?
+    private var presenter: MoviesDescriptionPresenter?
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let posterImageView = UIImageView()
@@ -23,6 +22,7 @@ class MoviesDescriptionViewController: UIViewController {
         self.navigationController?.setNavigationBarHidden(true, animated: false)
         
         configure()
+        presenter?.fetchPosterImage()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -38,6 +38,7 @@ class MoviesDescriptionViewController: UIViewController {
         setupStackView()
         setupDescriptionLabel()
         setupCustomBackButton()
+        presenter = MoviesDescriptionPresenter(view: self, movieDescription: movieDescription!)
     }
     
     private func setupCustomBackButton() {
@@ -57,7 +58,7 @@ class MoviesDescriptionViewController: UIViewController {
         contentView.addSubview(backButton)
         
         NSLayoutConstraint.activate([
-            backButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 25),
+            backButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 40),
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 13),
             backButton.widthAnchor.constraint(equalToConstant: 50),
             backButton.heightAnchor.constraint(equalToConstant: 50)
@@ -94,10 +95,6 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupPosterImage() {
-        networkManager.fetchPoster(from: movieDescription!.posterURL) { data in
-            self.posterImageView.image = UIImage(data: data)
-        }
-        
         posterImageView.contentMode = .scaleAspectFill
         
         posterImageView.layer.shadowColor = UIColor.black.cgColor
@@ -115,6 +112,16 @@ class MoviesDescriptionViewController: UIViewController {
             posterImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             posterImageView.heightAnchor.constraint(equalToConstant: 450)
         ])
+    }
+    
+    func displayPoster(image: UIImage?) {
+        posterImageView.image = image
+    }
+    
+    func displayError(message: String) {
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true)
     }
     
     private func setupTitleNameLabel() {
