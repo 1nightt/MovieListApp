@@ -115,12 +115,6 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
             navigationBar.compactAppearance = appearance
         }
     }
-    
-    func navigateToMovieDescriptionViewController(with movieDescription: MoviesDescription) {
-        let descriptionVC = MoviesDescriptionViewController()
-        descriptionVC.movieDescription = movieDescription
-        navigationController?.pushViewController(descriptionVC, animated: true)
-    }
 }
 
 // MARK: - UICollectionViewDataSource
