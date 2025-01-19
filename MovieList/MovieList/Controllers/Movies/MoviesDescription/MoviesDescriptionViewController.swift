@@ -2,27 +2,35 @@ import UIKit
 
 class MoviesDescriptionViewController: UIViewController {
     
-    private let networkManager = NetworkManager.shared
+    // MARK: -Public Properties
     var movieDescription: MoviesDescription?
     var onFilmIdReceived: ((String) -> Void)?
+    
+    // MARK: -Private Properties
+    private let networkManager = NetworkManager.shared
     private let scrollView = UIScrollView()
     private let contentView = UIView()
+    
     private let posterImageView = UIImageView()
     private let titleNameLabel = UILabel()
-    
     private let releaseYearLabel = UILabel()
     private let ratingLabel = UILabel()
     private let genreLabel = UILabel()
     private let stackView = UIStackView()
     private let descriptionLabel = UILabel()
     
+    // MARK: -Lyfecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
         
         self.navigationController?.setNavigationBarHidden(true, animated: false)
-        
         configure()
+    }
+    
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        navigationController?.setNavigationBarHidden(true, animated: false)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -30,6 +38,7 @@ class MoviesDescriptionViewController: UIViewController {
         self.navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
+    // MARK: Private Methods
     private func configure() {
         setupScrollView()
         setupContentView()

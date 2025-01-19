@@ -23,7 +23,6 @@ class TabBarController: UITabBarController {
         favoriteViewController.title = Resources.Strings.TabBar.favorite
         
         let moivesNavViewController = UINavigationController(rootViewController: moviesViewController)
-//        let favoriteNavViewController = UINavigationController(rootViewController: favoriteViewController)
         
         setViewControllers([moivesNavViewController, favoriteViewController], animated: true)
     }

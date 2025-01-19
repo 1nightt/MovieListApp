@@ -66,7 +66,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
             let placeholderText = "Введите название фильма"
             
             let attributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white
+                NSAttributedString.Key.foregroundColor: UIColor.lightGray
             ]
             searchTextField.attributedPlaceholder = NSAttributedString(string: placeholderText, attributes: attributes)
             
