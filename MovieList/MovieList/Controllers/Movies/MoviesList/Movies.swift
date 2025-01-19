@@ -1,6 +1,7 @@
 import Foundation
 
 struct Movies: Codable {
+    let pagesCount: Int
     let films: [Film]
 }
 

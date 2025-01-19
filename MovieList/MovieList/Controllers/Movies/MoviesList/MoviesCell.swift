@@ -32,7 +32,7 @@ class MoviesCell: UICollectionViewCell {
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.7) // Занимает 60% высоты ячейки
+            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.75) // Занимает 60% высоты ячейки
         ])
         
         // Установка констрейнтов для label

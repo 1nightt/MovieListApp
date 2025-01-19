@@ -25,7 +25,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         setupNavBarController()
         setupSearchController()
         setupCollectionView()
-        fetchMovies()
+        fetchAllMovies()
     }
     
     private func checkAndRequestApiKey() {
@@ -41,7 +41,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         alert.addAction(UIAlertAction(title: "Сохранить", style: .default, handler: { [weak self] _ in
             if let apiKey = alert.textFields?.first?.text, !apiKey.isEmpty {
                 self?.networkManager.setApiKey(apiKey)
-                self?.fetchMovies()
+                self?.fetchAllMovies()
             } else {
                 self?.showApiKeyAlert()
             }
@@ -49,7 +49,6 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         present(alert, animated: true, completion: nil)
     }
 
-    
     private func setupCollectionView() {
         let layout = UICollectionViewFlowLayout()
         layout.itemSize = CGSize(width: 180, height: 270)
@@ -97,15 +96,15 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
             navigationBar.compactAppearance = appearance
         }
     }
-    
-    private func fetchMovies() {
-        networkManager.fetchMovies { [weak self] result in
+
+    private func fetchAllMovies() {
+        networkManager.fetchAllMovies { [weak self] result in
             switch result {
             case .success(let movies):
-                self?.dataSource = movies.films
+                self?.dataSource = movies
                 self?.collectionView.reloadData()
             case .failure(let error):
-                print("Error in fetchMovies: \(error.localizedDescription)")
+                print("Error in fetchAllMovies: \(error.localizedDescription)")
             }
         }
     }

@@ -14,9 +14,14 @@ class NetworkManager {
     private init() {}
     
     func setApiKey(_ key: String) {
-        KeychainManager.shared.save(key: "apiKey", value: key)
+        let success = KeychainManager.shared.save(key: "apiKey", value: key)
+        if success {
+            print("API key saved successfully")
+        } else {
+            print("Failed to save API key")
+        }
     }
-    
+
     func fetchPoster(from url: URL, completion: @escaping (Data) -> Void) {
         DispatchQueue.global().async {
             guard let imageData = try? Data(contentsOf: url) else { return }
@@ -27,16 +32,25 @@ class NetworkManager {
         }
     }
     
-    func fetchMovies(completion: @escaping (Result<Movies, NetworkError>) -> Void) {
+    func fetchMovies(page: Int, completion: @escaping (Result<Movies, NetworkError>) -> Void) {
         guard let apiKey = self.apiKey else {
             print("API key not set")
             return
         }
         
-        var request = URLRequest(url: Link.allMovies.url)
+        // Формируем URL с параметром страницы
+        var urlComponents = URLComponents(string: Link.allMovies.url.absoluteString)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "page", value: "\(page)")
+        ]
+        guard let url = urlComponents?.url else {
+            completion(.failure(.invalidURL))
+            return
+        }
+        
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-//        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
         request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -63,7 +77,36 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    func fetchAllMovies(completion: @escaping (Result<[Film], NetworkError>) -> Void) {
+        var allMovies: [Film] = []
+        var currentPage = 1
+        let dispatchGroup = DispatchGroup()
+        
+        func loadPage(page: Int) {
+            dispatchGroup.enter()
+            fetchMovies(page: page) { result in
+                switch result {
+                case .success(let movies):
+                    allMovies.append(contentsOf: movies.films)
+                    if page < movies.pagesCount {
+                        currentPage += 1
+                        loadPage(page: currentPage)
+                    }
+                case .failure(let error):
+                    print("Error fetching page \(page): \(error)")
+                }
+                dispatchGroup.leave()
+            }
+        }
+        
+        loadPage(page: currentPage)
+        
+        dispatchGroup.notify(queue: .main) {
+            completion(.success(allMovies))
+        }
+    }
+
     func fetchDescriptionMovies(for filmId: String, completion: @escaping (Result<MoviesDescription, NetworkError>) -> Void) {
         guard let apiKey = self.apiKey else {
             print("API key not set")
@@ -79,7 +122,6 @@ class NetworkManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-//        request.addValue("8ab6e58c-55d1-4d53-bfeb-221ece8573f4", forHTTPHeaderField: "X-API-KEY")
         request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -108,9 +150,6 @@ class NetworkManager {
     }
 }
 
-
-
-
 extension NetworkManager {
     enum Link {
         case allMovies
@@ -123,4 +162,3 @@ extension NetworkManager {
         }
     }
 }
-
