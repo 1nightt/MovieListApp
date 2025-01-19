@@ -1,10 +1,11 @@
 import UIKit
 
-class TabBarController: UITabBarController {
+class TabBarController: UITabBarController, UITabBarControllerDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
         configure()
+        delegate = self
     }
     
     private func configure() {
@@ -22,8 +23,19 @@ class TabBarController: UITabBarController {
         moviesViewController.title = Resources.Strings.TabBar.movies
         favoriteViewController.title = Resources.Strings.TabBar.favorite
         
-        let moivesNavViewController = UINavigationController(rootViewController: moviesViewController)
+        let moviesNavViewController = UINavigationController(rootViewController: moviesViewController)
         
-        setViewControllers([moivesNavViewController, favoriteViewController], animated: true)
+        setViewControllers([moviesNavViewController, favoriteViewController], animated: true)
+    }
+    
+    // MARK: - UITabBarControllerDelegate
+    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
+        if let navigationController = viewController as? UINavigationController,
+           let moviesViewController = navigationController.viewControllers.first as? MoviesViewController,
+           viewController == selectedViewController {
+            // Прокрутка вверх, если MoviesViewController уже выбран
+            moviesViewController.scrollToTop()
+        }
+        return true
     }
 }

@@ -7,7 +7,8 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     private var collectionView: UICollectionView!
     private let networkManager = NetworkManager.shared
     var dataSource = [Film]()
-    
+    var filteredMovies = [Film]()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
@@ -48,7 +49,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         }))
         present(alert, animated: true, completion: nil)
     }
-
+    
     private func setupCollectionView() {
         let layout = UICollectionViewFlowLayout()
         layout.itemSize = CGSize(width: 180, height: 270)
@@ -61,6 +62,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     }
     
     private func setupSearchController() {
+    searchController.searchResultsUpdater = self
         if let searchTextField = searchController.searchBar.value(forKey: "searchField") as? UITextField {
             let placeholderText = "Введите название фильма"
             
@@ -82,6 +84,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     
     private func setupNavBarController() {
         navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.isTranslucent = false
         navigationItem.searchController = searchController
         if let navigationBar = navigationController?.navigationBar {
             let appearance = UINavigationBarAppearance()
@@ -96,12 +99,13 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
             navigationBar.compactAppearance = appearance
         }
     }
-
+    
     private func fetchAllMovies() {
         networkManager.fetchAllMovies { [weak self] result in
             switch result {
             case .success(let movies):
                 self?.dataSource = movies
+                self?.filteredMovies = movies
                 self?.collectionView.reloadData()
             case .failure(let error):
                 print("Error in fetchAllMovies: \(error.localizedDescription)")
@@ -119,7 +123,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
 // MARK: - UICollectionViewDataSource
 extension MoviesViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return dataSource.count
+        return filteredMovies.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -128,7 +132,7 @@ extension MoviesViewController: UICollectionViewDataSource {
         cell.imageView.tintColor = .lightGray
         cell.label.text = ""
         
-        let film = dataSource[indexPath.row]
+        let film = filteredMovies[indexPath.row]
         cell.label.text = film.nameRU
         networkManager.fetchPoster(from: film.posterURLPreview) { data in
             cell.imageView.image = UIImage(data: data)
@@ -141,7 +145,7 @@ extension MoviesViewController: UICollectionViewDataSource {
 // MARK: - UICollectionViewDelegate
 extension MoviesViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let film = dataSource[indexPath.row]
+        let film = filteredMovies[indexPath.row]
         let filmId = film.filmID
         
         NetworkManager.shared.fetchDescriptionMovies(for: String(filmId)) { [weak self] result in
@@ -154,5 +158,30 @@ extension MoviesViewController: UICollectionViewDelegate {
                 print("Error fetching movie description: \(error)")
             }
         }
+    }
+}
+
+extension MoviesViewController {
+    func scrollToTop() {
+        guard !dataSource.isEmpty else { return }
+        
+        // Учитываем все отступы, включая NavBar и SearchController
+        let topOffset = CGPoint(x: 0, y: -collectionView.adjustedContentInset.top)
+        
+        collectionView.setContentOffset(topOffset, animated: true)
+    }
+}
+
+extension MoviesViewController: UISearchResultsUpdating {
+    func updateSearchResults(for searchController: UISearchController) {
+        guard let searchText = searchController.searchBar.text, !searchText.isEmpty else {
+            filteredMovies = dataSource // Если строка поиска пуста, показываем весь список
+            collectionView.reloadData()
+            return
+        }
+        
+        // Фильтрация фильмов
+        filteredMovies = dataSource.filter { $0.nameRU.lowercased().contains(searchText.lowercased()) }
+        collectionView.reloadData()
     }
 }
