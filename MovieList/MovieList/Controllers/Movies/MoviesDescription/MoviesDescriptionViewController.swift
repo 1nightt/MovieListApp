@@ -70,6 +70,7 @@ class MoviesDescriptionViewController: UIViewController {
     
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.bounces = false
         view.addSubview(scrollView)
         
         NSLayoutConstraint.activate([
