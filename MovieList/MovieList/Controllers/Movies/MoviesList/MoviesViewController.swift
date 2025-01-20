@@ -8,11 +8,12 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     private let networkManager = NetworkManager.shared
     var dataSource = [Film]()
     var filteredMovies = [Film]()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
         configure()
+        navigationController?.navigationBar.sizeToFit()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -26,6 +27,7 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         setupNavBarController()
         setupSearchController()
         setupCollectionView()
+        setupDismissKeyboardGesture()
         fetchAllMovies()
     }
     
@@ -62,7 +64,11 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     }
     
     private func setupSearchController() {
-    searchController.searchResultsUpdater = self
+        searchController.searchResultsUpdater = self
+        self.searchController.obscuresBackgroundDuringPresentation = false
+        self.searchController.hidesNavigationBarDuringPresentation = false
+        self.definesPresentationContext = false
+        self.navigationItem.hidesSearchBarWhenScrolling = false
         if let searchTextField = searchController.searchBar.value(forKey: "searchField") as? UITextField {
             let placeholderText = "Введите название фильма"
             
@@ -98,6 +104,16 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
             navigationBar.scrollEdgeAppearance = appearance
             navigationBar.compactAppearance = appearance
         }
+    }
+    
+    private func setupDismissKeyboardGesture() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func dismissKeyboard() {
+        searchController.searchBar.resignFirstResponder()
     }
     
     private func fetchAllMovies() {
@@ -183,5 +199,20 @@ extension MoviesViewController: UISearchResultsUpdating {
         // Фильтрация фильмов
         filteredMovies = dataSource.filter { $0.nameRU.lowercased().contains(searchText.lowercased()) }
         collectionView.reloadData()
+    }
+}
+
+extension MoviesViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard let navigationBar = navigationController?.navigationBar else { return }
+        
+        // Плавная анимация скрытия/появления строки поиска
+        let offset = scrollView.contentOffset.y
+        let alpha = 1 - (offset / 100) // Регулируйте "100" для скорости исчезновения
+        navigationBar.alpha = max(1, min(1, alpha))
+    }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        dismissKeyboard()
     }
 }
