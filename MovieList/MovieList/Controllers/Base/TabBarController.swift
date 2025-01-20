@@ -33,7 +33,6 @@ class TabBarController: UITabBarController, UITabBarControllerDelegate {
         if let navigationController = viewController as? UINavigationController,
            let moviesViewController = navigationController.viewControllers.first as? MoviesViewController,
            viewController == selectedViewController {
-            // Прокрутка вверх, если MoviesViewController уже выбран
             moviesViewController.scrollToTop()
         }
         return true

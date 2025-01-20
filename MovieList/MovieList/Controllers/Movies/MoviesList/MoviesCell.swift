@@ -27,15 +27,13 @@ class MoviesCell: UICollectionViewCell {
         contentView.addSubview(imageView)
         contentView.addSubview(label)
         
-        // Установка констрейнтов для imageView
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.75) // Занимает 60% высоты ячейки
+            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.75)
         ])
         
-        // Установка констрейнтов для label
         NSLayoutConstraint.activate([
             label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 10),
             label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),

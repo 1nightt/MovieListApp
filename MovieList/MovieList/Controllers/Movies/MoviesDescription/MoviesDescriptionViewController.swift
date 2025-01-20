@@ -66,7 +66,7 @@ class MoviesDescriptionViewController: UIViewController {
         contentView.addSubview(backButton)
         
         NSLayoutConstraint.activate([
-            backButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 40),
+            backButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 13),
             backButton.widthAnchor.constraint(equalToConstant: 50),
             backButton.heightAnchor.constraint(equalToConstant: 50)

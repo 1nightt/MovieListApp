@@ -38,7 +38,6 @@ class NetworkManager {
             return
         }
         
-        // Формируем URL с параметром страницы
         var urlComponents = URLComponents(string: Link.allMovies.url.absoluteString)
         urlComponents?.queryItems = [
             URLQueryItem(name: "page", value: "\(page)")
