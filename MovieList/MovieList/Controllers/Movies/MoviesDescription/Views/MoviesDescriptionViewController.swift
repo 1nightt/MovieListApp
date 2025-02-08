@@ -2,12 +2,9 @@ import UIKit
 
 class MoviesDescriptionViewController: UIViewController {
     
-    // MARK: -Public Properties
-    var movieDescription: MoviesDescription?
-    var onFilmIdReceived: ((String) -> Void)?
-    
     // MARK: -Private Properties
-    private let networkManager = NetworkManager.shared
+    
+    private let viewModel: MoviesDescriptionViewModel
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     
@@ -19,7 +16,25 @@ class MoviesDescriptionViewController: UIViewController {
     private let stackView = UIStackView()
     private let descriptionLabel = UILabel()
     
+    
+    // MARK: -Initializers
+    
+    init(viewModel: MoviesDescriptionViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: -Public Properties
+    
+    var onFilmIdReceived: ((String) -> Void)?
+    var filmId: String?
+    
     // MARK: -Lyfecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
@@ -39,6 +54,7 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     // MARK: Private Methods
+    
     private func configure() {
         setupScrollView()
         setupContentView()
@@ -73,10 +89,6 @@ class MoviesDescriptionViewController: UIViewController {
         ])
     }
     
-    @objc private func backButtonPressed() {
-        self.navigationController?.popViewController(animated: true)
-    }
-    
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.bounces = false
@@ -104,9 +116,11 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupPosterImage() {
-        networkManager.fetchPoster(from: movieDescription!.posterURL) { data in
-            self.posterImageView.image = UIImage(data: data)
-        }
+        viewModel.loadPoster { [weak self] imageData in
+             DispatchQueue.main.async {
+                 self?.posterImageView.image = UIImage(data: imageData)
+             }
+         }
         
         posterImageView.contentMode = .scaleAspectFill
         
@@ -128,7 +142,7 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupTitleNameLabel() {
-        titleNameLabel.text = movieDescription?.nameRU
+        titleNameLabel.text = viewModel.movieTitle
         titleNameLabel.font = UIFont.boldSystemFont(ofSize: 25)
         titleNameLabel.textColor = Resources.DescriptionViewColors.titleNameColor
         titleNameLabel.numberOfLines = 0
@@ -145,15 +159,15 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupStackView() {
-        releaseYearLabel.text = "\(movieDescription!.year)"
+        releaseYearLabel.text = "\(viewModel.movieYear)"
         releaseYearLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         releaseYearLabel.font = UIFont.systemFont(ofSize: 15)
         
-        ratingLabel.text = "\(movieDescription!.ratingKinopoisk)"
+        ratingLabel.text = "\(viewModel.movieRating)"
         ratingLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         ratingLabel.font = UIFont.boldSystemFont(ofSize: 15)
         
-        genreLabel.text = "Жанр: \(movieDescription!.genres.map( { $0.genre }).joined(separator: ", "))"
+        genreLabel.text = "Жанр: \(viewModel.movieGenres)"
         genreLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         genreLabel.font = UIFont.boldSystemFont(ofSize: 15)
         genreLabel.numberOfLines = 0
@@ -178,7 +192,7 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupDescriptionLabel() {
-        descriptionLabel.text = movieDescription?.description
+        descriptionLabel.text = viewModel.movieDescription
         descriptionLabel.textColor = Resources.DescriptionViewColors.titleNameColor
         descriptionLabel.numberOfLines = 0
         descriptionLabel.font = UIFont.systemFont(ofSize: 18)
@@ -193,5 +207,9 @@ class MoviesDescriptionViewController: UIViewController {
             descriptionLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
             descriptionLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
         ])
+    }
+    
+    @objc private func backButtonPressed() {
+        self.navigationController?.popViewController(animated: true)
     }
 }
