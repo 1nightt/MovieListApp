@@ -11,6 +11,7 @@ class MoviesInteractor: MoviesViewInteractorProtocol {
         }
     }
     
+    
     func fetchMovies() {
         NetworkManager.shared.fetchAllMovies { [ weak self ] result in
             switch result {

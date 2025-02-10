@@ -3,19 +3,24 @@ import UIKit
 class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout {
     
     // MARK: - Private Properties
+    
     private let searchController = UISearchController(searchResultsController: nil)
     private var collectionView: UICollectionView!
     
     // MARK: - Public Properties
+    
     var presenter: MoviesViewPresenterProtocol?
     var movies: [Film] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
+        
+        title = "Фильмы"
+        
         configure()
         navigationController?.navigationBar.sizeToFit()
-        presenter?.viewDidLoad()
+        presenter?.loadData()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -24,19 +29,19 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     }
     
     // MARK: - Private Methods
+    
     private func configure() {
-//        checkAndRequestApiKey()
+        checkAndRequestApiKey()
         setupNavBarController()
         setupSearchController()
         setupCollectionView()
         setupDismissKeyboardGesture()
-        presenter?.viewDidLoad()
     }
     
-//    private func checkAndRequestApiKey() {
-//        guard KeychainManager.shared.retrieve(key: "apiKey") == nil else { return }
-//        showApiKeyAlert()
-//    }
+    private func checkAndRequestApiKey() {
+        guard KeychainManager.shared.retrieve(key: "apiKey") == nil else { return }
+        showApiKeyAlert()
+    }
     
     private func setupCollectionView() {
         let layout = UICollectionViewFlowLayout()
@@ -102,27 +107,10 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         searchController.searchBar.resignFirstResponder()
     }
     
-//    private func fetchAllMovies() {
-//        networkManager.fetchAllMovies { [weak self] result in
-//            switch result {
-//            case .success(let movies):
-//                self?.dataSource = movies
-//                self?.filteredMovies = movies
-//                self?.collectionView.reloadData()
-//            case .failure(let error):
-//                print("Error in fetchAllMovies: \(error.localizedDescription)")
-//            }
-//        }
-//    }
-    
-    func navigateToMovieDescriptionViewController(with movieDescription: MoviesDescription) {
-        let descriptionVC = MoviesDescriptionViewController()
-        descriptionVC.movieDescription = movieDescription
-        navigationController?.pushViewController(descriptionVC, animated: true)
-    }
 }
 
 // MARK: - UICollectionViewDataSource
+
 extension MoviesViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return movies.count
@@ -148,23 +136,12 @@ extension MoviesViewController: UICollectionViewDataSource {
 }
 
 // MARK: - UICollectionViewDelegate
+
 extension MoviesViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let film = movies[indexPath.row]
         
         presenter?.didSelectedMovie(film)
-//        let filmId = film.filmID
-//        
-//        NetworkManager.shared.fetchDescriptionMovies(for: String(filmId)) { [weak self] result in
-//            switch result {
-//            case .success(let movieDescription):
-//                DispatchQueue.main.async {
-//                    self?.navigateToMovieDescriptionViewController(with: movieDescription)
-//                }
-//            case .failure(let error):
-//                print("Error fetching movie description: \(error)")
-//            }
-//        }
     }
 }
 

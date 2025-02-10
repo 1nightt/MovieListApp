@@ -7,7 +7,7 @@ protocol MoviesViewProtocol: AnyObject {
 }
 
 protocol MoviesViewPresenterProtocol: AnyObject {
-    func viewDidLoad()
+    func loadData()
     func searchMovies(with query: String)
     func didSelectedMovie(_ movie: Film)
     func requesApiKeyIfNeeded()

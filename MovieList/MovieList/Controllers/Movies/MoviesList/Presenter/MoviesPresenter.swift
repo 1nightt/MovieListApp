@@ -15,9 +15,9 @@ class MoviesPresenter: MoviesViewPresenterProtocol {
         self.router = router
     }
     
-    func viewDidLoad() {
+    func loadData() {
         requesApiKeyIfNeeded()
-        interactor!.fetchMovies()
+        interactor?.fetchMovies()
     }
     
     func searchMovies(with query: String) {

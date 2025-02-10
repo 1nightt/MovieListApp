@@ -1,11 +1,10 @@
-import Foundation
 import UIKit
 
 class MoviesRouter: MoviesViewRouterProtocol {
 
     weak var viewController: UIViewController?
     
-    init(viewController: UIViewController) {
+    init(viewController: UIViewController?) {
         self.viewController = viewController
     }
     
@@ -17,15 +16,12 @@ class MoviesRouter: MoviesViewRouterProtocol {
         
         view.presenter = presenter
         interactor.presenter = presenter
-        router.viewController = view
         
         return view
     }
     
     func navigateToMovieDetail(movie: MoviesDescription) {
-        let descriptionVC = MoviesDescriptionViewController()
-        descriptionVC.movieDescription = movie
+        let descriptionVC = MoviesDescriptionRouter.createModule(with: movie)
         viewController?.navigationController?.pushViewController(descriptionVC, animated: true)
     }
-    
 }
