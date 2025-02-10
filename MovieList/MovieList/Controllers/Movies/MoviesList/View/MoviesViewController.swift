@@ -3,17 +3,24 @@ import UIKit
 class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout {
     
     // MARK: - Private Properties
+    
     private let searchController = UISearchController(searchResultsController: nil)
     private var collectionView: UICollectionView!
-    private let networkManager = NetworkManager.shared
-    var dataSource = [Film]()
-    var filteredMovies = [Film]()
+    
+    // MARK: - Public Properties
+    
+    var presenter: MoviesViewPresenterProtocol?
+    var movies: [Film] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
+        
+        title = "Фильмы"
+        
         configure()
         navigationController?.navigationBar.sizeToFit()
+        presenter?.loadData()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -22,34 +29,18 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
     }
     
     // MARK: - Private Methods
+    
     private func configure() {
         checkAndRequestApiKey()
         setupNavBarController()
         setupSearchController()
         setupCollectionView()
         setupDismissKeyboardGesture()
-        fetchAllMovies()
     }
     
     private func checkAndRequestApiKey() {
         guard KeychainManager.shared.retrieve(key: "apiKey") == nil else { return }
         showApiKeyAlert()
-    }
-    
-    private func showApiKeyAlert() {
-        let alert = UIAlertController(title: "API Key", message: "Введите ваш API ключ", preferredStyle: .alert)
-        alert.addTextField { textField in
-            textField.placeholder = "API Key"
-        }
-        alert.addAction(UIAlertAction(title: "Сохранить", style: .default, handler: { [weak self] _ in
-            if let apiKey = alert.textFields?.first?.text, !apiKey.isEmpty {
-                self?.networkManager.setApiKey(apiKey)
-                self?.fetchAllMovies()
-            } else {
-                self?.showApiKeyAlert()
-            }
-        }))
-        present(alert, animated: true, completion: nil)
     }
     
     private func setupCollectionView() {
@@ -116,30 +107,13 @@ class MoviesViewController: UIViewController, UICollectionViewDelegateFlowLayout
         searchController.searchBar.resignFirstResponder()
     }
     
-    private func fetchAllMovies() {
-        networkManager.fetchAllMovies { [weak self] result in
-            switch result {
-            case .success(let movies):
-                self?.dataSource = movies
-                self?.filteredMovies = movies
-                self?.collectionView.reloadData()
-            case .failure(let error):
-                print("Error in fetchAllMovies: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    func navigateToMovieDescriptionViewController(with movieDescription: MoviesDescription) {
-        let descriptionVC = MoviesDescriptionViewController()
-        descriptionVC.movieDescription = movieDescription
-        navigationController?.pushViewController(descriptionVC, animated: true)
-    }
 }
 
 // MARK: - UICollectionViewDataSource
+
 extension MoviesViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return filteredMovies.count
+        return movies.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -148,10 +122,13 @@ extension MoviesViewController: UICollectionViewDataSource {
         cell.imageView.tintColor = .lightGray
         cell.label.text = ""
         
-        let film = filteredMovies[indexPath.row]
+        let film = movies[indexPath.row]
         cell.label.text = film.nameRU
-        networkManager.fetchPoster(from: film.posterURLPreview) { data in
-            cell.imageView.image = UIImage(data: data)
+        
+        presenter?.fetchPoster(for: film.posterURLPreview) { data in
+                DispatchQueue.main.async {
+                    cell.imageView.image = UIImage(data: data)
+                }
         }
         
         return cell
@@ -159,27 +136,18 @@ extension MoviesViewController: UICollectionViewDataSource {
 }
 
 // MARK: - UICollectionViewDelegate
+
 extension MoviesViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let film = filteredMovies[indexPath.row]
-        let filmId = film.filmID
+        let film = movies[indexPath.row]
         
-        NetworkManager.shared.fetchDescriptionMovies(for: String(filmId)) { [weak self] result in
-            switch result {
-            case .success(let movieDescription):
-                DispatchQueue.main.async {
-                    self?.navigateToMovieDescriptionViewController(with: movieDescription)
-                }
-            case .failure(let error):
-                print("Error fetching movie description: \(error)")
-            }
-        }
+        presenter?.didSelectedMovie(film)
     }
 }
 
 extension MoviesViewController {
     func scrollToTop() {
-        guard !dataSource.isEmpty else { return }
+        guard !movies.isEmpty else { return }
         
         let topOffset = CGPoint(x: 0, y: -collectionView.adjustedContentInset.top)
         
@@ -189,14 +157,8 @@ extension MoviesViewController {
 
 extension MoviesViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
-        guard let searchText = searchController.searchBar.text, !searchText.isEmpty else {
-            filteredMovies = dataSource
-            collectionView.reloadData()
-            return
-        }
-        
-        filteredMovies = dataSource.filter { $0.nameRU.lowercased().contains(searchText.lowercased()) }
-        collectionView.reloadData()
+        guard let query = searchController.searchBar.text else { return }
+        presenter?.searchMovies(with: query)
     }
 }
 
@@ -211,5 +173,38 @@ extension MoviesViewController: UIScrollViewDelegate {
     
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         dismissKeyboard()
+    }
+}
+
+
+extension MoviesViewController: MoviesViewProtocol {
+    
+    func showMovies(_ movies: [Film]) {
+        self.movies = movies
+        collectionView.reloadData()
+    }
+    
+    func showError(_ error: String) {
+        print(error)
+    }
+    
+    func showApiKeyAlert() {
+        let alert = UIAlertController(title: "API Key", message: "Введите ваш API ключ", preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.placeholder = "API Key"
+        }
+        alert.addAction(UIAlertAction(title: "Сохранить", style: .default, handler: { [weak self] _ in
+            if let apiKey = alert.textFields?.first?.text, !apiKey.isEmpty {
+                let success = KeychainManager.shared.save(key: "apiKey", value: apiKey)
+                if success {
+                    self?.presenter?.requesApiKeyIfNeeded()
+                } else {
+                    print("Ошибка сохранения API ключа в Keychain")
+                }
+            } else {
+                self?.showApiKeyAlert()
+            }
+        }))
+        present(alert, animated: true, completion: nil)
     }
 }
