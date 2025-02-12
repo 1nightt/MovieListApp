@@ -1,13 +1,13 @@
 import UIKit
 
-class MoviesDescriptionViewController: UIViewController {
+class MoviesDescriptionViewController: UIViewController, MoviesDescriptionViewProtocol {
     
-    // MARK: -Public Properties
-    var movieDescription: MoviesDescription?
-    var onFilmIdReceived: ((String) -> Void)?
+    // MARK: - Public Properties
+    
+    var presenter: MoviesDescriptionPresenterProtocol?
     
     // MARK: -Private Properties
-    private let networkManager = NetworkManager.shared
+    
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     
@@ -19,11 +19,13 @@ class MoviesDescriptionViewController: UIViewController {
     private let stackView = UIStackView()
     private let descriptionLabel = UILabel()
     
-    // MARK: -Lyfecycle
+    // MARK: - Lyfecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Resources.Colors.backgroundColor
         
+        presenter?.loadData()
         self.navigationController?.setNavigationBarHidden(true, animated: false)
         configure()
     }
@@ -38,7 +40,8 @@ class MoviesDescriptionViewController: UIViewController {
         self.navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
-    // MARK: Private Methods
+    // MARK: - Private Methods
+    
     private func configure() {
         setupScrollView()
         setupContentView()
@@ -52,14 +55,12 @@ class MoviesDescriptionViewController: UIViewController {
     private func setupCustomBackButton() {
         let backButton = UIButton(type: .system)
         
-        // Устанавливаем SF Symbol chevron.backward с жирной конфигурацией
         let boldConfig = UIImage.SymbolConfiguration(weight: .bold)
         let chevronImage = UIImage(systemName: "chevron.backward", withConfiguration: boldConfig)
         backButton.setImage(chevronImage, for: .normal)
         backButton.tintColor = Resources.DescriptionViewColors.backButtonColor
         backButton.contentHorizontalAlignment = .leading
         
-        // Добавляем действие для кнопки
         backButton.addTarget(self, action: #selector(backButtonPressed), for: .touchUpInside)
         
         backButton.translatesAutoresizingMaskIntoConstraints = false
@@ -73,8 +74,20 @@ class MoviesDescriptionViewController: UIViewController {
         ])
     }
     
+    func updateView(with movie: MoviesDescription) {
+        titleNameLabel.text = movie.nameRU
+        releaseYearLabel.text = "\(movie.year)"
+        ratingLabel.text = "\(movie.ratingKinopoisk)"
+        genreLabel.text = "Жанр: \(movie.genres.map { $0.genre }.joined(separator: ", "))"
+        descriptionLabel.text = movie.description
+    }
+
+    func updatePoster(with imageData: Data) {
+        posterImageView.image = UIImage(data: imageData)
+    }
+    
     @objc private func backButtonPressed() {
-        self.navigationController?.popViewController(animated: true)
+        presenter?.backButtonTapped()
     }
     
     private func setupScrollView() {
@@ -104,10 +117,6 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupPosterImage() {
-        networkManager.fetchPoster(from: movieDescription!.posterURL) { data in
-            self.posterImageView.image = UIImage(data: data)
-        }
-        
         posterImageView.contentMode = .scaleAspectFill
         
         posterImageView.layer.shadowColor = UIColor.black.cgColor
@@ -128,7 +137,6 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupTitleNameLabel() {
-        titleNameLabel.text = movieDescription?.nameRU
         titleNameLabel.font = UIFont.boldSystemFont(ofSize: 25)
         titleNameLabel.textColor = Resources.DescriptionViewColors.titleNameColor
         titleNameLabel.numberOfLines = 0
@@ -145,15 +153,12 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupStackView() {
-        releaseYearLabel.text = "\(movieDescription!.year)"
         releaseYearLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         releaseYearLabel.font = UIFont.systemFont(ofSize: 15)
         
-        ratingLabel.text = "\(movieDescription!.ratingKinopoisk)"
         ratingLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         ratingLabel.font = UIFont.boldSystemFont(ofSize: 15)
         
-        genreLabel.text = "Жанр: \(movieDescription!.genres.map( { $0.genre }).joined(separator: ", "))"
         genreLabel.textColor = Resources.DescriptionViewColors.descriptionColor
         genreLabel.font = UIFont.boldSystemFont(ofSize: 15)
         genreLabel.numberOfLines = 0
@@ -178,7 +183,6 @@ class MoviesDescriptionViewController: UIViewController {
     }
     
     private func setupDescriptionLabel() {
-        descriptionLabel.text = movieDescription?.description
         descriptionLabel.textColor = Resources.DescriptionViewColors.titleNameColor
         descriptionLabel.numberOfLines = 0
         descriptionLabel.font = UIFont.systemFont(ofSize: 18)
