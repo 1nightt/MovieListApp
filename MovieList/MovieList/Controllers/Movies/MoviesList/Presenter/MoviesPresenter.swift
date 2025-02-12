@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 class MoviesPresenter: MoviesViewPresenterProtocol {
     
@@ -42,11 +41,6 @@ class MoviesPresenter: MoviesViewPresenterProtocol {
     func fetchPoster(for url: URL, completion: @escaping (Data) -> Void) {
         interactor?.fetchPoster(for: url, completion: completion)
     }
-    
-}
-
-
-extension MoviesPresenter: MoviesViewInteractorOutputProtocol {
     
     func moviesFetched(_ movies: [Film]) {
         self.allMovies = movies

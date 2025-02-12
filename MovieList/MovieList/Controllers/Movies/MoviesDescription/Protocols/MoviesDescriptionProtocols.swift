@@ -5,19 +5,18 @@ protocol MoviesDescriptionViewProtocol: AnyObject {
     func updatePoster(with imageData: Data)
 }
 
-protocol MoviesDescriptionPresenterProtocol {
+protocol MoviesDescriptionPresenterProtocol: AnyObject {
     func loadData()
     func backButtonTapped()
+    
+    func didFetchMovie(_ movie: MoviesDescription)
+    func didFetchPoster(_ data: Data)
 }
 
 protocol MoviesDescriptionInteractorProtocol {
+    var presenter: MoviesDescriptionPresenterProtocol? { get set }
     func fetchMovieDescription()
     func fetchPoster(from url: URL)
-}
-
-protocol MoviesDescriptionInteractorOutputProtocol: AnyObject {
-    func didFetchMovie(_ movie: MoviesDescription)
-    func didFetchPoster(_ data: Data)
 }
 
 protocol MoviesDescriptionRouterProtocol {

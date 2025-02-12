@@ -1,8 +1,5 @@
+import Alamofire
 import Foundation
-
-enum NetworkError: Error {
-    case invalidURL, decodingError, noData
-}
 
 class NetworkManager {
     static let shared = NetworkManager()
@@ -15,73 +12,46 @@ class NetworkManager {
     
     func setApiKey(_ key: String) {
         let success = KeychainManager.shared.save(key: "apiKey", value: key)
-        if success {
-            print("API key saved successfully")
-        } else {
-            print("Failed to save API key")
-        }
+        print(success ? "API key saved successfully" : "Failed to save API key")
     }
 
     func fetchPoster(from url: URL, completion: @escaping (Data) -> Void) {
-        DispatchQueue.global().async {
-            guard let imageData = try? Data(contentsOf: url) else { return }
-            
-            DispatchQueue.main.async {
-                completion(imageData)
+        AF.request(url).responseData { response in
+            switch response.result {
+            case .success(let data):
+                completion(data)
+            case .failure(let error):
+                print("Failed to load poster: \(error.localizedDescription)")
             }
         }
     }
     
-    func fetchMovies(page: Int, completion: @escaping (Result<Movies, NetworkError>) -> Void) {
+    func fetchMovies(page: Int, completion: @escaping (Result<Movies, AFError>) -> Void) {
         guard let apiKey = self.apiKey else {
             print("API key not set")
             return
         }
         
-        var urlComponents = URLComponents(string: Link.allMovies.url.absoluteString)
-        urlComponents?.queryItems = [
-            URLQueryItem(name: "page", value: "\(page)")
-        ]
-        guard let url = urlComponents?.url else {
-            completion(.failure(.invalidURL))
-            return
-        }
+        let parameters: [String: String] = ["page": "\(page)"]
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-            
-            guard let data = data else {
-                print(error?.localizedDescription ?? "No error description")
-                completion(.failure(.noData))
-                return
-            }
-            
-            let decoder = JSONDecoder()
-            
-            do {
-                let moviesQuery = try decoder.decode(Movies.self, from: data)
-                DispatchQueue.main.async {
-                    completion(.success(moviesQuery))
+        AF.request(Link.allMovies.url, parameters: parameters, headers: ["X-API-KEY": apiKey])
+            .validate()
+            .responseDecodable(of: Movies.self) { response in
+                switch response.result {
+                case .success(let movies):
+                    completion(.success(movies))
+                case .failure(let error):
+                    print("Error fetching movies: \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
-            } catch {
-                print("Decoding error: \(error.localizedDescription)")
-                completion(.failure(.decodingError))
             }
-        }.resume()
     }
 
-    func fetchAllMovies(completion: @escaping (Result<[Film], NetworkError>) -> Void) {
+    func fetchAllMovies(completion: @escaping (Result<[Film], AFError>) -> Void) {
         var allMovies: [Film] = []
         var currentPage = 1
         let dispatchGroup = DispatchGroup()
-        
+
         func loadPage(page: Int) {
             dispatchGroup.enter()
             fetchMovies(page: page) { result in
@@ -93,66 +63,47 @@ class NetworkManager {
                         loadPage(page: currentPage)
                     }
                 case .failure(let error):
-                    print("Error fetching page \(page): \(error)")
+                    print("Error fetching page \(page): \(error.localizedDescription)")
                 }
                 dispatchGroup.leave()
             }
         }
-        
+
         loadPage(page: currentPage)
-        
+
         dispatchGroup.notify(queue: .main) {
             completion(.success(allMovies))
         }
     }
 
-    func fetchDescriptionMovies(for filmId: String, completion: @escaping (Result<MoviesDescription, NetworkError>) -> Void) {
+    func fetchDescriptionMovies(for filmId: String, completion: @escaping (Result<MoviesDescription, AFError>) -> Void) {
         guard let apiKey = self.apiKey else {
             print("API key not set")
             return
         }
-        
+
         let urlString = "https://kinopoiskapiunofficial.tech/api/v2.2/films/\(filmId)"
-        guard let url = URL(string: urlString) else {
-            completion(.failure(.invalidURL))
-            return
-        }
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(apiKey, forHTTPHeaderField: "X-API-KEY")
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-            
-            guard let data = data else {
-                print(error?.localizedDescription ?? "No error description")
-                completion(.failure(.noData))
-                return
-            }
-            
-            let decoder = JSONDecoder()
-            
-            do {
-                let moviesDescriptionQuery = try decoder.decode(MoviesDescription.self, from: data)
-                DispatchQueue.main.async {
-                    completion(.success(moviesDescriptionQuery))
+        AF.request(urlString, headers: ["X-API-KEY": apiKey])
+            .validate()
+            .responseDecodable(of: MoviesDescription.self) { response in
+                switch response.result {
+                case .success(let movieDescription):
+                    completion(.success(movieDescription))
+                case .failure(let error):
+                    print("Error fetching movie description: \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
-            } catch {
-                print("Decoding error: \(error.localizedDescription)")
-                completion(.failure(.decodingError))
             }
-        }.resume()
     }
 }
+
+// MARK: - API Links
 
 extension NetworkManager {
     enum Link {
         case allMovies
-        
+
         var url: URL {
             switch self {
             case .allMovies:
