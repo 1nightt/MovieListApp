@@ -1,8 +1,7 @@
-import UIKit
+import Foundation
 
 class MoviesDescriptionPresenter: MoviesDescriptionPresenterProtocol {
 
-    
     weak var view: MoviesDescriptionViewProtocol?
     var interactor: MoviesDescriptionInteractorProtocol?
     var router: MoviesDescriptionRouterProtocol?
@@ -20,12 +19,9 @@ class MoviesDescriptionPresenter: MoviesDescriptionPresenterProtocol {
     func backButtonTapped() {
         router?.navigateBack()
     }
-}
-
-extension MoviesDescriptionPresenter: MoviesDescriptionInteractorOutputProtocol {
+    
     func didFetchMovie(_ movie: MoviesDescription) {
         view?.updateView(with: movie)
-        interactor?.fetchPoster(from: movie.posterURL)
     }
 
     func didFetchPoster(_ data: Data) {

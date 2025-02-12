@@ -2,9 +2,8 @@ import Foundation
 
 class MoviesDescriptionInteractor: MoviesDescriptionInteractorProtocol {
     
-    weak var presenter: MoviesDescriptionInteractorOutputProtocol?
+    var presenter: MoviesDescriptionPresenterProtocol?
     private let networkManager = NetworkManager.shared
-    
     private let movie: MoviesDescription
 
     init(movie: MoviesDescription) {
@@ -13,6 +12,7 @@ class MoviesDescriptionInteractor: MoviesDescriptionInteractorProtocol {
 
     func fetchMovieDescription() {
         presenter?.didFetchMovie(movie)
+        fetchPoster(from: movie.posterURL)
     }
 
     func fetchPoster(from url: URL) {
